@@ -17,7 +17,7 @@ export const Transactional = (
   descriptor: PropertyDescriptor
 ) => {
   const method = descriptor.value;
-  descriptor.value = async (...args: any[]) => {
+  descriptor.value = async function (...args: any[]) {
     let session: ClientSession;
     let hasSessionInParam = false;
 
