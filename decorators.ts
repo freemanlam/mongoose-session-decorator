@@ -11,11 +11,15 @@ export const transactional = async (session?: ClientSession) => {
   return session;
 };
 
+
+/**
+ * Method Decorator to control mongo client session create and commit
+ */
 export const Transactional = (
-  target: any,
+  target: Object,
   propertyKey: string,
-  descriptor: PropertyDescriptor
-) => {
+  descriptor: PropertyDescriptor,
+): PropertyDescriptor => {
   const method = descriptor.value;
   descriptor.value = async function (...args: any[]) {
     let session: ClientSession;
@@ -32,8 +36,9 @@ export const Transactional = (
     session = await transactional(session);
     args[sessionParamIndex] = session;
 
-    // handle if method returns a Promise
+    // invoke original method
     let rtn = method.apply(this, args);
+    // handle if method returns a Promise
     if (rtn instanceof Promise) {
       rtn = await rtn;
     }
@@ -51,7 +56,14 @@ export const Transactional = (
   return descriptor;
 };
 
-export const Session = (target: any, propertyKey: string, index: number) => {
+/**
+ * Parameter Decorator to declare mongo client session param
+ */
+export const Session = (
+  target: Object,
+  propertyKey: string,
+  index: number,
+): void => {
   const metadataKey = `${propertyKey}_mongoose_session`;
   target[metadataKey] = index;
 };
