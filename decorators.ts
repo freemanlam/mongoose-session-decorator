@@ -1,18 +1,6 @@
 import { startSession, ClientSession } from 'mongoose';
 
 /**
- * Generate session without using decorators
- */
-export const transactional = async (session?: ClientSession) => {
-  if (!session) {
-    // TODO: POC only
-    session = 'internal session' as any; // await startSession();
-  }
-  return session;
-};
-
-
-/**
  * Method Decorator to control mongo client session create and commit
  */
 export const Transactional = (
@@ -30,11 +18,13 @@ export const Transactional = (
     if (typeof sessionParamIndex === 'number' && args[sessionParamIndex]) {
       session = args[sessionParamIndex];
       hasSessionInParam = true;
+    } else {
+      // if no session, create one
+      session = await startSession();
+      args[sessionParamIndex] = session;
+      // start internal transaction
+      session.startTransaction();
     }
-
-    // if no session, create one
-    session = await transactional(session);
-    args[sessionParamIndex] = session;
 
     // invoke original method
     let rtn = method.apply(this, args);
@@ -45,10 +35,8 @@ export const Transactional = (
 
     // end transation if use internal session
     if (!hasSessionInParam) {
-      // TODO: POC only
-      console.log('commit internal transaction');
-      // session.commitTransaction();
-      // session.endSession();
+      await session.commitTransaction();
+      session.endSession();
     }
 
     return rtn;
